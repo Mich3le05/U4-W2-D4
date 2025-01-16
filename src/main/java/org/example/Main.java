@@ -5,9 +5,8 @@ import org.example.entitites.Product;
 import org.example.entitites.Order;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -27,66 +26,79 @@ public class Main {
         System.out.println("--------------------------------- ORDERS ----------------------------------");
         orders.forEach(System.out::println);
 
+        // ESERCIZIO 1: Raggruppa gli ordini per cliente
         System.out.println("---------------------------------- ES 1 ------------------------------------");
-        getBooks().forEach(System.out::println);
+        groupOrdersByCustomer().forEach((customer, orders) -> {
+            System.out.println(customer);
+            orders.forEach(System.out::println);
+        });
+
+        // ESERCIZIO 2: Calcola il totale delle vendite per cliente
         System.out.println("---------------------------------- ES 2 ------------------------------------");
-        getBabyOrders().forEach(System.out::println);
+        calculateTotalSalesByCustomer().forEach((customer, totalSales) -> {
+            System.out.println(customer + " -> Total Sales: " + totalSales);
+        });
+
+        // ESERCIZIO 3: Trova i prodotti più costosi
         System.out.println("---------------------------------- ES 3 ------------------------------------");
-        getBoysProductsWithDiscount().forEach(System.out::println);
+        findMostExpensiveProducts().forEach(System.out::println);
+
+        // ESERCIZIO 4: Calcola la media degli importi degli ordini
         System.out.println("---------------------------------- ES 4 ------------------------------------");
-        getTier2Products().forEach(System.out::println);
+        System.out.println("Average Order Value: " + calculateAverageOrderValue());
+
+        // ESERCIZIO 5: Raggruppa i prodotti per categoria e calcola la somma degli importi
+        System.out.println("---------------------------------- ES 5 ------------------------------------");
+        groupProductsByCategoryAndSum().forEach((category, totalPrice) -> {
+            System.out.println("Category: " + category + ", Total Price: " + totalPrice);
+        });
     }
 
-    // 1
-    public static List<Product> getBooks() {
-        return warehouse.stream().filter(product -> product.getCategory().equals("Books") && product.getPrice() > 100).toList();
+    // ESERCIZIO 1: Raggruppa gli ordini per cliente
+    public static Map<Customer, List<Order>> groupOrdersByCustomer() {
+        return orders.stream()
+                .collect(Collectors.groupingBy(Order::getCustomer));
     }
 
-    // 2
-    public static List<Order> getBabyOrders() {
-
-        return orders.stream().filter(order -> order.getProducts().stream().anyMatch(product -> product.getCategory().equals("Baby"))).toList();
-
-		/* Alternativamente:
-		List<Order> filteredOrders = new ArrayList<>();
-		orders.forEach(order -> {
-			if (order.getProducts().stream().anyMatch(product -> product.getCategory().equals("Baby"))) {
-				filteredOrders.add(order);
-			}
-		});
-		return filteredOrders;
-		*/
+    // ESERCIZIO 2: Calcola il totale delle vendite per cliente
+    public static Map<Customer, Double> calculateTotalSalesByCustomer() {
+        return orders.stream()
+                .collect(Collectors.groupingBy(
+                        Order::getCustomer,
+                        Collectors.summingDouble(Order::getTotal)
+                ));
     }
 
-    // 3
-    public static List<Product> getBoysProductsWithDiscount() {
-        return warehouse.stream().filter(p -> p.getCategory().equals("Boys")).map(product -> {
-            product.setPrice(product.getPrice() * 0.90);
-            return product;
-        }).toList();
-    }
+    // ESERCIZIO 3: Trova i prodotti più costosi
+    public static List<Product> findMostExpensiveProducts() {
+        double maxPrice = warehouse.stream()
+                .mapToDouble(Product::getPrice)
+                .max()
+                .orElse(0);
 
-    // 4
-    public static List<Product> getTier2Products() {
-        List<Order> filteredByTierAndDates = orders.stream()
-                .filter(order -> order.getCustomer().getTier() == 2
-                        && order.getOrderDate().isBefore(LocalDate.parse("2023-05-09"))
-                        && order.getOrderDate().isAfter(LocalDate.parse("2023-05-01")))
+        return warehouse.stream()
+                .filter(product -> product.getPrice() == maxPrice)
                 .toList();
-
-        List<Product> products = new ArrayList<>();
-
-        for (Order order : filteredByTierAndDates) {
-            products.addAll(order.getProducts());
-        }
-        return products;
-
-		/*
-		Alternativa al ciclo for:
-		return filteredByTierAndDates.stream().flatMap(order -> order.getProducts().stream()).toList();*/
-
     }
 
+    // ESERCIZIO 4: Calcola la media degli importi degli ordini
+    public static double calculateAverageOrderValue() {
+        return orders.stream()
+                .mapToDouble(Order::getTotal)
+                .average()
+                .orElse(0);
+    }
+
+    // ESERCIZIO 5: Raggruppa i prodotti per categoria e calcola la somma degli importi
+    public static Map<String, Double> groupProductsByCategoryAndSum() {
+        return warehouse.stream()
+                .collect(Collectors.groupingBy(
+                        Product::getCategory,
+                        Collectors.summingDouble(Product::getPrice)
+                ));
+    }
+
+    // Metodi esistenti
     public static void initializeWarehouse() {
         Product iPhone = new Product("IPhone", "Smartphones", 2000.0);
         Product lotrBook = new Product("LOTR", "Books", 101);
@@ -145,6 +157,5 @@ public class Main {
         orders.add(giacomoOrder);
         orders.add(marinaOrder);
         orders.add(giacomoOrder2);
-
     }
 }
